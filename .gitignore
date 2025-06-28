@@ -4,6 +4,11 @@
 .env.production
 .env.development
 
+# Google Cloud credentials
+google-cloud-credentials.json
+*.json
+service-account-*.json
+
 # Python cache and compiled files
 __pycache__/
 *.pyc
