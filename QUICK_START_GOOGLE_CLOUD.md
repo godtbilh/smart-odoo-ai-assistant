@@ -9,9 +9,12 @@
 2. Create new project: `odoo-ai-assistant`
 3. **Enable billing** (required - but very affordable: ~$2-5/month)
 
-### **Step 2: Enable API**
+### **Step 2: Enable Required APIs (CRITICAL)**
 1. Go to **APIs & Services** → **Library**
-2. Search "Vertex AI API" → **Enable**
+2. **Enable Vertex AI API**: Search "Vertex AI API" → **Enable**
+3. **Enable Generative Language API**: Search "Generative Language API" → **Enable**
+4. **Enable AI Platform API**: Search "AI Platform API" → **Enable**
+5. **Wait 5-10 minutes** for all APIs to fully activate
 
 ### **Step 3: Create Service Account**
 1. **APIs & Services** → **Credentials** → **Create Credentials** → **Service Account**

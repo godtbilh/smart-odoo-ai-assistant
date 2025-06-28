@@ -33,12 +33,21 @@ This guide will help you upgrade from the free Google AI Studio API to Google Cl
    - Pro: ~$1.25 per 1M input tokens
    - Your monthly cost will likely be under $5-10
 
-### **Step 3: Enable the Vertex AI API**
+### **Step 3: Enable Required APIs**
 1. Go to **APIs & Services** → **Library**
-2. Search for "Vertex AI API"
-3. Click on "Vertex AI API"
-4. Click **"Enable"**
-5. Wait for activation (may take a few minutes)
+2. **Enable Vertex AI API:**
+   - Search for "Vertex AI API"
+   - Click on "Vertex AI API"
+   - Click **"Enable"**
+3. **Enable Generative AI API (CRITICAL):**
+   - Search for "Generative Language API"
+   - Click on "Generative Language API"
+   - Click **"Enable"**
+4. **Alternative: Enable AI Platform API:**
+   - Search for "AI Platform API"
+   - Click on "AI Platform API" 
+   - Click **"Enable"**
+5. Wait for all APIs to activate (may take a few minutes)
 
 ### **Step 4: Create Service Account & API Key**
 1. Go to **APIs & Services** → **Credentials**
