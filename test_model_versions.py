@@ -21,8 +21,8 @@ def test_model_versions():
     import vertexai
     from vertexai.generative_models import GenerativeModel
     
-    vertexai.init(project=project_id, location="us-central1")
-    print(f"✅ Vertex AI initialized for project: {project_id}")
+    vertexai.init(project=project_id, location="europe-west2")
+    print(f"✅ Vertex AI initialized for project: {project_id} in europe-west2")
     
     # Test different model names
     model_names = [

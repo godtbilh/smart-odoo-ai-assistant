@@ -27,9 +27,9 @@ def test_google_cloud_access():
         import vertexai
         print("✅ vertexai library imported")
         
-        # Initialize with correct project
-        vertexai.init(project=project_id, location="us-central1")
-        print(f"✅ Vertex AI initialized for project: {project_id}")
+        # Initialize with correct project (using working European region)
+        vertexai.init(project=project_id, location="europe-west2")
+        print(f"✅ Vertex AI initialized for project: {project_id} in europe-west2")
         
     except Exception as e:
         print(f"❌ Vertex AI initialization failed: {e}")
