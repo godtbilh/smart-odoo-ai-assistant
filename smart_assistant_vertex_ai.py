@@ -213,55 +213,135 @@ def analyze_request_complexity(user_request: str) -> tuple:
     """Analyze user request and determine appropriate LLM and agent"""
     request_lower = user_request.lower()
     
-    # Simple tasks - use Flash LLM
-    simple_keywords = ['customer', 'who is', 'find customer', 'contact', 'email address', 'phone']
+    # Customer/Contact related keywords - use Flash LLM with Odoo tools
+    customer_keywords = [
+        'customer', 'who is', 'find customer', 'contact', 'email address', 'phone', 'mobile',
+        'email of', 'contact for', 'address of', 'phone of', 'mobile of', 'information about',
+        'details of', 'find', 'search for', 'look up', 'brico', 'company', 'client',
+        'partner', 'supplier', 'vendor', 'contact details', 'customer info'
+    ]
     
-    # Complex tasks - use Pro LLM
-    complex_keywords = ['update product', 'draft email', 'write email', 'create', 'generate', 'analyze', 'polish']
+    # Product related keywords - use Pro LLM with Odoo tools  
+    product_keywords = [
+        'product', 'item', 'inventory', 'stock', 'catalog', 'price', 'description',
+        'update product', 'modify product', 'product info', 'product details'
+    ]
     
-    # Determine complexity
-    if any(keyword in request_lower for keyword in simple_keywords):
+    # Email/Communication keywords - use Pro LLM
+    email_keywords = ['draft email', 'write email', 'send email', 'compose', 'letter', 'message']
+    
+    # Complex content generation - use Pro LLM
+    complex_keywords = ['create', 'generate', 'analyze', 'polish', 'improve', 'enhance']
+    
+    # Check for customer/contact queries first (most common)
+    if any(keyword in request_lower for keyword in customer_keywords):
         return "simple", "customer_service"
+    elif any(keyword in request_lower for keyword in product_keywords):
+        return "complex", "product_management"
+    elif any(keyword in request_lower for keyword in email_keywords):
+        return "complex", "email_communication"
     elif any(keyword in request_lower for keyword in complex_keywords):
-        if any(word in request_lower for word in ['email', 'draft', 'write']):
-            return "complex", "email_communication"
-        else:
-            return "complex", "product_management"
+        return "complex", "content_generation"
     else:
-        return "simple", "general"
+        # Default to customer service for ambiguous queries
+        return "simple", "customer_service"
 
-# --- 8. Vertex AI Agents ---
-print("\n--- Assembling Vertex AI Workforce ---")
+# --- 8. CrewAI LLM Configuration ---
+print("\n--- Configuring CrewAI LLMs ---")
+
+# Use Vertex AI models directly with CrewAI
+try:
+    # Flash LLM for simple tasks - using Vertex AI
+    crewai_flash_llm = LLM(
+        model="vertex_ai/gemini-1.5-flash",
+        vertex_ai_project=project_id,
+        vertex_ai_location="europe-west2",
+        temperature=0.3
+    )
+    
+    # Pro LLM for complex tasks - using Vertex AI
+    crewai_pro_llm = LLM(
+        model="vertex_ai/gemini-1.5-pro", 
+        vertex_ai_project=project_id,
+        vertex_ai_location="europe-west2",
+        temperature=0.7
+    )
+    
+    print("✅ CrewAI LLMs configured with Vertex AI:")
+    print("   💨 Flash LLM: vertex_ai/gemini-1.5-flash (fast & cost-effective)")
+    print("   ⚖️ Pro LLM: vertex_ai/gemini-1.5-pro (advanced reasoning)")
+    print("   🌍 Region: europe-west2 (Belgium optimized)")
+    
+except Exception as e:
+    print(f"❌ Failed to configure CrewAI LLMs with Vertex AI: {e}")
+    print("💡 Falling back to Google AI Studio...")
+    
+    # Fallback to Google AI Studio if Vertex AI fails
+    try:
+        crewai_flash_llm = LLM(
+            model="gemini/gemini-1.5-flash",
+            api_key=os.environ.get("GOOGLE_API_KEY"),
+            temperature=0.3
+        )
+        
+        crewai_pro_llm = LLM(
+            model="gemini/gemini-1.5-pro", 
+            api_key=os.environ.get("GOOGLE_API_KEY"),
+            temperature=0.7
+        )
+        
+        print("✅ CrewAI LLMs configured with Google AI Studio (fallback):")
+        print("   💨 Flash LLM: gemini-1.5-flash")
+        print("   ⚖️ Pro LLM: gemini-1.5-pro")
+        
+    except Exception as e2:
+        print(f"❌ Both Vertex AI and Google AI Studio failed: {e2}")
+        print("💡 Will use direct Vertex AI calls without CrewAI")
+        crewai_flash_llm = None
+        crewai_pro_llm = None
+
+# --- 9. Vertex AI Agents ---
+print("\n--- Assembling AI Workforce ---")
 
 # Simple tasks agent (Flash LLM)
 customer_agent_flash = Agent(
-    role='Customer Service Specialist (Vertex AI Flash)',
-    goal='Find customer contact details and order history efficiently using Vertex AI.',
-    backstory="You are an expert in quick customer information retrieval, powered by Vertex AI Flash model for optimal speed and cost efficiency.",
+    role='Odoo Customer Service Specialist',
+    goal='Search the Odoo database to find customer contact details and order history efficiently.',
+    backstory="""You are an expert Odoo database assistant specializing in customer information retrieval. 
+    Your primary job is to search the Odoo database using the available tools to find customer information.
+    
+    IMPORTANT: Always use the Odoo Customer Info Finder tool when users ask about customers, companies, contacts, or contact information.
+    You have access to a live Odoo database and should search it first before saying information is not available.""",
     tools=[customer_info_tool],
-    verbose=True,
-    max_iter=1,
-    memory=False
-)
-
-# Complex tasks agents (Pro LLM)
-product_agent_pro = Agent(
-    role='Product Management Specialist (Vertex AI Pro)',
-    goal='Handle complex product updates and multilingual content generation using advanced AI.',
-    backstory="You are an expert in product management with advanced content creation capabilities, powered by Vertex AI Pro model.",
-    tools=[product_finder_tool, product_updater_tool, content_generator_tool],
+    llm=crewai_flash_llm,
     verbose=True,
     max_iter=2,
     memory=False
 )
 
-email_agent_pro = Agent(
-    role='Email Communication Specialist (Vertex AI Pro)',
-    goal='Draft high-quality professional emails in multiple languages using advanced AI.',
-    backstory="You are an expert in business communication with advanced language skills, powered by Vertex AI Pro model.",
-    tools=[email_draft_tool],
+# Complex tasks agents (Pro LLM)
+product_agent_pro = Agent(
+    role='Odoo Product Management Specialist',
+    goal='Handle complex product updates and multilingual content generation using Odoo tools.',
+    backstory="""You are an expert in product management with advanced content creation capabilities.
+    You have access to Odoo product tools and can search, update, and generate content for products.
+    Always use the available Odoo tools to provide accurate, up-to-date information.""",
+    tools=[product_finder_tool, product_updater_tool, content_generator_tool],
+    llm=crewai_pro_llm,
     verbose=True,
-    max_iter=1,
+    max_iter=3,
+    memory=False
+)
+
+email_agent_pro = Agent(
+    role='Professional Email Communication Specialist',
+    goal='Draft high-quality professional emails in multiple languages.',
+    backstory="""You are an expert in business communication with advanced language skills.
+    You can create professional emails in English, Dutch, and French with appropriate tone and formatting.""",
+    tools=[email_draft_tool],
+    llm=crewai_pro_llm,
+    verbose=True,
+    max_iter=2,
     memory=False
 )
 
@@ -301,44 +381,137 @@ def main():
             print(f"   Type: {request_type}")
             print(f"   Region: europe-west2 (Belgium optimized)")
             
-            # Route to appropriate agent and LLM
-            if complexity == "simple":
-                print("⚡ Routing to Vertex AI FLASH LLM")
+            # Route to appropriate agent and LLM using CrewAI
+            if complexity == "simple" and request_type == "customer_service":
+                print("⚡ Routing to CUSTOMER SERVICE AGENT with Odoo tools")
                 cost_monitor.track_call('flash')
                 
-                # Use Flash model directly for simple tasks
+                # Create task for customer service
+                customer_task = Task(
+                    description=f"""You are an Odoo database assistant. Search the Odoo database for: '{user_request}'
+                    
+                    IMPORTANT: You must use the Odoo Customer Info Finder tool to search the database.
+                    If the user is asking about a company, person, or contact information, search for it in Odoo first.
+                    
+                    Examples:
+                    - "email of Brico Boncelles" → Search for "Brico Boncelles" in Odoo
+                    - "contact for ABC Company" → Search for "ABC Company" in Odoo
+                    - "phone number of John Smith" → Search for "John Smith" in Odoo
+                    
+                    If not found in Odoo, explain that the information is not in your database.""",
+                    expected_output="Customer information from Odoo database or explanation if not found",
+                    agent=customer_agent_flash
+                )
+                
+                # Create and run crew
+                customer_crew = Crew(
+                    agents=[customer_agent_flash],
+                    tasks=[customer_task],
+                    process=Process.sequential,
+                    verbose=True
+                )
+                
                 try:
-                    flash_response = flash_llm.generate(f"Handle this customer service request efficiently: '{user_request}'. Provide clear, direct results.")
+                    result = customer_crew.kickoff()
                     print("\n" + "="*60)
                     print("✅ TASK COMPLETE! Here's your result:")
                     print("="*60)
-                    print(flash_response)
+                    print(result)
                     print("="*60)
                 except Exception as e:
-                    print(f"❌ Flash LLM error: {e}")
+                    print(f"❌ Customer service error: {e}")
                     continue
                 
-            else:  # complex
-                print("⚖️ Routing to Vertex AI PRO LLM")
+            else:  # complex tasks
+                print("⚖️ Routing to ADVANCED AGENTS with specialized tools")
                 cost_monitor.track_call('pro')
                 
                 if request_type == "email_communication":
-                    prompt = f"Handle this email request professionally: '{user_request}'. Create high-quality, well-structured communication."
+                    email_task = Task(
+                        description=f"Handle this email request professionally: '{user_request}'. Create high-quality, well-structured communication.",
+                        expected_output="Professional email draft with proper formatting and tone",
+                        agent=email_agent_pro
+                    )
+                    
+                    email_crew = Crew(
+                        agents=[email_agent_pro],
+                        tasks=[email_task],
+                        process=Process.sequential,
+                        verbose=True
+                    )
+                    
+                    try:
+                        result = email_crew.kickoff()
+                        print("\n" + "="*60)
+                        print("✅ TASK COMPLETE! Here's your result:")
+                        print("="*60)
+                        print(result)
+                        print("="*60)
+                    except Exception as e:
+                        print(f"❌ Email service error: {e}")
+                        continue
+                        
                 elif request_type == "product_management":
-                    prompt = f"Handle this product management request: '{user_request}'. Focus on quality, engaging descriptions and multilingual content."
-                else:
-                    prompt = f"Handle this complex request: '{user_request}'. Provide detailed, high-quality results."
-                
-                try:
-                    pro_response = pro_llm.generate(prompt)
-                    print("\n" + "="*60)
-                    print("✅ TASK COMPLETE! Here's your result:")
-                    print("="*60)
-                    print(pro_response)
-                    print("="*60)
-                except Exception as e:
-                    print(f"❌ Pro LLM error: {e}")
-                    continue
+                    product_task = Task(
+                        description=f"""Handle this product management request: '{user_request}'.
+                        
+                        Use the available Odoo tools to:
+                        1. Search for products if needed
+                        2. Generate compelling multilingual content if requested
+                        3. Update product information if requested
+                        4. Provide detailed product information
+                        
+                        Focus on quality, engaging descriptions and multilingual content.""",
+                        expected_output="Complete product management results with multilingual content",
+                        agent=product_agent_pro
+                    )
+                    
+                    product_crew = Crew(
+                        agents=[product_agent_pro],
+                        tasks=[product_task],
+                        process=Process.sequential,
+                        verbose=True
+                    )
+                    
+                    try:
+                        result = product_crew.kickoff()
+                        print("\n" + "="*60)
+                        print("✅ TASK COMPLETE! Here's your result:")
+                        print("="*60)
+                        print(result)
+                        print("="*60)
+                    except Exception as e:
+                        print(f"❌ Product management error: {e}")
+                        continue
+                        
+                else:  # content_generation or other complex tasks
+                    # For general complex tasks, use customer service as fallback
+                    general_task = Task(
+                        description=f"""Handle this request: '{user_request}'.
+                        
+                        If this seems like a customer/contact query, use the Odoo Customer Info Finder tool.
+                        Provide detailed, high-quality results based on available tools.""",
+                        expected_output="Detailed response using available tools and information",
+                        agent=customer_agent_flash
+                    )
+                    
+                    general_crew = Crew(
+                        agents=[customer_agent_flash],
+                        tasks=[general_task],
+                        process=Process.sequential,
+                        verbose=True
+                    )
+                    
+                    try:
+                        result = general_crew.kickoff()
+                        print("\n" + "="*60)
+                        print("✅ TASK COMPLETE! Here's your result:")
+                        print("="*60)
+                        print(result)
+                        print("="*60)
+                    except Exception as e:
+                        print(f"❌ General service error: {e}")
+                        continue
 
             # Show cost summary every 3 requests
             total_calls = cost_monitor.costs['flash_calls'] + cost_monitor.costs['pro_calls']

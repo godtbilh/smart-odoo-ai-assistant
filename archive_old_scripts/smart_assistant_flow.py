@@ -416,13 +416,12 @@ def main():
             
             # Initialize flow
             flow = SmartOdooFlow()
-            flow.state.user_request = user_request
             
-            # Run the flow
+            # Run the flow with user request
             print("\n🚀 Starting cost-optimized flow...")
             print("-" * 50)
             
-            result = flow.kickoff()
+            result = flow.kickoff(inputs={"user_request": user_request})
             
             print("\n" + "="*60)
             print("✅ TASK COMPLETE! Here's your result:")
