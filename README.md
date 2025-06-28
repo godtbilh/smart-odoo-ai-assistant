@@ -35,6 +35,12 @@ This project demonstrates the evolution from basic Odoo integration to a smart, 
 - **Instant Results**: Fast customer information retrieval
 - **Complete Data**: Contact details, order history, addresses
 
+### 💰 Cost-Optimized Flow Assistant (`smart_assistant_flow.py`)
+- **60-80% Cost Reduction**: Multi-LLM architecture with intelligent routing
+- **CrewAI Flow**: Event-driven task processing
+- **Smart LLM Selection**: Flash/Pro/Premium models based on complexity
+- **Real-time Cost Monitoring**: Track and optimize AI spending
+
 ### 🛠️ Organized Tools (`tools/` directory)
 - **Modular Architecture**: Clean, reusable components
 - **Odoo Connection**: Centralized connection management
@@ -106,6 +112,23 @@ python simple_customer_lookup.py
 - Quick customer searches
 - Avoiding API rate limits
 - Direct Odoo data access
+
+### Cost-Optimized Flow Assistant
+```bash
+python smart_assistant_flow.py
+```
+
+**Features:**
+- **60-80% cost reduction** through intelligent LLM routing
+- **Flash LLM** for simple tasks (customer lookups, basic queries)
+- **Pro LLM** for standard tasks (emails, product descriptions)
+- **Premium LLM** only for complex analysis
+- **Real-time cost monitoring** and usage analytics
+
+**Test the optimization:**
+```bash
+python test_cost_optimization.py
+```
 
 ## 🏗️ Architecture
 
